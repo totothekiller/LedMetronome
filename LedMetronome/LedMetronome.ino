@@ -8,16 +8,14 @@
 #define RESETBUTTONPIN      2
 #define TEMPOBUTTONPIN      3
 
-#define NBRTAP  8
+#define NBRTAP  5
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 unsigned long _previousTime = 0;
 
-double _bpm;
-
+double _speed; // in microseconds^-1
 double _position;
-
 int _direction = 1;
 
 boolean _tick = false;
@@ -39,11 +37,13 @@ void setup() {
   pinMode(RESETBUTTONPIN, INPUT_PULLUP);
   pinMode(TEMPOBUTTONPIN, INPUT_PULLUP);
 
-  _bpm = 120;
-  
+  // Initial Speed around 120 BPM
+  _speed = BPM2speed(120);
+   
   Serial.begin(9600);
-  
-  }
+  Serial.print("BPM = \t"); Serial.println(speed2BPM(_speed)); 
+
+}
 
 void loop() {
 
@@ -64,15 +64,11 @@ void loop() {
 
 
 //
-//
+// Compute Next Position : time is in microseconds
 //
 void engine(unsigned long currentTime, unsigned long dt)
 {
-
-  double speed = _bpm * XMAX  /  60.0 ;
-
-  _position = _position + _direction * speed * dt / 1000000.0;
-
+  _position += _direction * _speed * dt;
 
   if (_position > XMAX)
   {
@@ -160,26 +156,50 @@ void userButton(unsigned long currentTime)
         sum += _tempos[i+1] - _tempos[i];
        }
        
-       //Serial.print("Sum ="); Serial.println(sum); 
+       //Serial.print("Sum =\t"); Serial.println(sum); 
        
       double mean = sum / (NBRTAP-1);
        
-       // Serial.print("Mean ="); Serial.println(mean); 
+       //Serial.print("Mean =\t"); Serial.println(mean); 
       
-      _bpm = 60000000.0 / mean;
+      _speed = time2speed(mean);
       
-      Serial.print("BPM\t"); Serial.println(_bpm); 
+      Serial.print("BPM =\t"); Serial.println(speed2BPM(_speed)); 
       
-          // Reset Position
-    //_tick = true;
-    //_previousTick = currentTime;
-    _direction = -1;
-    _position = XMAX;
+       // Reset Position
+      _direction = 1;
+      _position = 0.0;
       
     }
     
   }
   
   _previousTempoState = stateTempo;
-
 }
+
+
+//
+// Utils : Convert Speed to BPM
+//
+double speed2BPM(double speed)
+{
+  return (speed * 60000000.0) / XMAX ;
+}
+
+//
+// Utils : Convert BPM to speed
+//
+double BPM2speed(double bpm)
+{
+  return ( XMAX * bpm ) / 60000000.0;
+}
+
+//
+// Utils : Convert Time (in microseconds) to speed
+//
+double time2speed(double ms)
+{
+  return XMAX / ms;
+}
+
+
