@@ -169,7 +169,8 @@ void userButton(unsigned long currentTime)
        // Reset Position
       _direction = 1;
       _position = 0.0;
-      
+      // Flash !
+      _previousTick = currentTime;
     }
     
   }
