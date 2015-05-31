@@ -6,12 +6,15 @@
 #define XMAX      15
 
 #define RESETBUTTONPIN      2
-#define TEMPOBUTTONPIN      4
+#define TEMPOBUTTONPIN      3
+
+#define NBRTAP  8
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 unsigned long _previousTime = 0;
-unsigned int _bpm;
+
+double _bpm;
 
 double _position;
 
@@ -23,7 +26,7 @@ unsigned long _previousTick = 0;
 int _previousResetState;
 
 int _previousTempoState;
-unsigned long _tempos[4];
+unsigned long _tempos[NBRTAP];
 unsigned int _currentTemposIndex;
 
 
@@ -33,8 +36,8 @@ void setup() {
 
 
   // initialize the pushbutton pin as an input:
-  pinMode(RESETBUTTONPIN, INPUT);
-  pinMode(TEMPOBUTTONPIN, INPUT);
+  pinMode(RESETBUTTONPIN, INPUT_PULLUP);
+  pinMode(TEMPOBUTTONPIN, INPUT_PULLUP);
 
   _bpm = 120;
   
@@ -123,7 +126,7 @@ void userButton(unsigned long currentTime)
   // RESET
   int stateReset = digitalRead(RESETBUTTONPIN);
 
-  if (stateReset ==  HIGH && _previousResetState == LOW)
+  if (stateReset ==  LOW && _previousResetState == HIGH)
   {
     // Reset Position
     _tick = true;
@@ -141,25 +144,25 @@ void userButton(unsigned long currentTime)
 
   int stateTempo = digitalRead(TEMPOBUTTONPIN);
 
-  if (stateTempo ==  HIGH && _previousTempoState == LOW)
+  if (stateTempo ==  LOW && _previousTempoState == HIGH)
   {
     Serial.print("Tap\t");Serial.print(_currentTemposIndex);Serial.print("\t");Serial.println(currentTime); 
     
     _tempos[_currentTemposIndex] = currentTime;
     
-    _currentTemposIndex = (_currentTemposIndex + 1) % 4 ;
+    _currentTemposIndex = (_currentTemposIndex + 1) % NBRTAP ;
     
     if(_currentTemposIndex == 0)
     {
       unsigned long sum = 0;
       
-      for (int i = 0; i < 3; i++) {        
+      for (int i = 0; i < NBRTAP-1; i++) {        
         sum += _tempos[i+1] - _tempos[i];
        }
        
        //Serial.print("Sum ="); Serial.println(sum); 
        
-      unsigned long  mean = sum / 3;
+      double mean = sum / (NBRTAP-1);
        
        // Serial.print("Mean ="); Serial.println(mean); 
       
